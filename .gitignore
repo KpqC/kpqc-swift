@@ -1,0 +1,8 @@
+.build/
+DerivedData/
+Pods/
+__pycache__/
+*.py[cod]
+.DS_Store
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
