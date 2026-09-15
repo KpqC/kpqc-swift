@@ -16,10 +16,10 @@ Pod::Spec.new do |spec|
 
   spec.module_name = "KpqC"
   spec.swift_versions = ["5.8"]
-  spec.ios.deployment_target = "13.0"
-  spec.osx.deployment_target = "10.15"
-  spec.tvos.deployment_target = "13.0"
-  spec.watchos.deployment_target = "6.0"
+  spec.ios.deployment_target = "15.0"
+  spec.osx.deployment_target = "12.0"
+  spec.tvos.deployment_target = "15.0"
+  spec.watchos.deployment_target = "9.0"
 
   spec.source_files = [
     "Sources/KpqC/**/*.swift",
@@ -42,6 +42,9 @@ Pod::Spec.new do |spec|
   }
 
   spec.test_spec "Tests" do |test_spec|
+    test_spec.ios.deployment_target = "15.0"
+    test_spec.osx.deployment_target = "12.0"
+    test_spec.tvos.deployment_target = "15.0"
     test_spec.source_files = "Tests/KpqCTests/*.swift"
   end
 end

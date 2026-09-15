@@ -6,7 +6,7 @@ SMAUG-T.
 ## Runtime support
 
 - Swift 5.8 or newer
-- iOS 13, macOS 10.15, tvOS 13, or watchOS 6 and newer
+- iOS 15, macOS 12, tvOS 15, or watchOS 9 and newer
 - CocoaPods
 
 ## Install
