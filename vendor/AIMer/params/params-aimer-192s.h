@@ -8,26 +8,26 @@
 #define SECURITY_BITS               192                  // security parameter
 #define SECURITY_BYTES              (SECURITY_BITS / 8)  // byte size of security parameter
 
-#define AIM2_NUM_BITS_FIELD         SECURITY_BITS        // number of bits in field element
-#define AIM2_NUM_BYTES_FIELD        SECURITY_BYTES       // number of bytes in field element
-#define AIM2_NUM_WORDS_FIELD        (SECURITY_BITS / 64) // number of 64-bit words in element
-#define AIM2_NUM_BITS_WORD          64                   // number of bits in word
-#define AIM2_IV_SIZE                SECURITY_BYTES       // byte size of AIM2 initial vector
+#define AIM3_NUM_BITS_FIELD         SECURITY_BITS        // number of bits in field element
+#define AIM3_NUM_BYTES_FIELD        SECURITY_BYTES       // number of bytes in field element
+#define AIM3_NUM_WORDS_FIELD        (SECURITY_BITS / 64) // number of 64-bit words in element
+#define AIM3_NUM_BITS_WORD          64                   // number of bits in word
+#define AIM3_IV_SIZE                SECURITY_BYTES       // byte size of AIM3 initial vector
 
-#define AIM2_NUM_INPUT_SBOX         2                    // number of AIM2 input S-boxes
+#define AIM3_NUM_INPUT_SBOX         2                    // number of AIM3 input S-boxes
 
 #define AIMER_SALT_SIZE             SECURITY_BYTES       // byte size of salt
 #define AIMER_SEED_SIZE             SECURITY_BYTES       // byte size of seed
 #define AIMER_COMMIT_SIZE           (SECURITY_BYTES * 2) // byte size of commitment
 
-#define AIMER_L                     AIM2_NUM_INPUT_SBOX
+#define AIMER_L                     AIM3_NUM_INPUT_SBOX
 #define AIMER_T                     25                   // number of parallel repetitions (Tau)
 #define AIMER_N                     256                  // number of MPC parties (N)
 #define AIMER_LOGN                  8                    // log_2(N)
 
 #define AIMER_PK_BYTES              48                   // byte size of public key
 #define AIMER_SK_BYTES              72                   // byte size of secret key
-#define AIMER_SIG_BYTES             9120                 // byte size of signature
+#define AIMER_SIG_BYTES             10320                // byte size of signature
 
 #define AIMER_HASH_PREFIX_0         0x30
 

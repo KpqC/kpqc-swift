@@ -12,14 +12,17 @@ void expand_tree(uint8_t nodes[2 * AIMER_N - 1][AIMER_SEED_SIZE],
 {
   size_t node_index;
   hash_instance ctx;
+  uint8_t rep_byte = (uint8_t)rep_index;
 
   memcpy(nodes[0], seed, AIMER_SEED_SIZE);
   for (node_index = 1; node_index < AIMER_N; node_index++)
   {
+    uint8_t node_byte = (uint8_t)node_index;
+
     hash_init_prefix(&ctx, HASH_PREFIX_4);
     hash_update(&ctx, salt, AIMER_SALT_SIZE);
-    hash_update(&ctx, (const uint8_t*)&rep_index, sizeof(uint8_t));
-    hash_update(&ctx, (const uint8_t*)&node_index, sizeof(uint8_t));
+    hash_update(&ctx, &rep_byte, sizeof(rep_byte));
+    hash_update(&ctx, &node_byte, sizeof(node_byte));
     hash_update(&ctx, nodes[node_index - 1], AIMER_SEED_SIZE);
     hash_final(&ctx);
 
@@ -50,6 +53,7 @@ void reconstruct_tree(uint8_t nodes[2 * AIMER_N - 2][AIMER_SEED_SIZE],
 {
   size_t index, depth, path;
   hash_instance ctx;
+  uint8_t rep_byte = (uint8_t)rep_index;
 
   for (depth = 1; depth < AIMER_LOGN; depth++)
   {
@@ -58,10 +62,12 @@ void reconstruct_tree(uint8_t nodes[2 * AIMER_N - 2][AIMER_SEED_SIZE],
 
     for (index = (1U << depth); index < (2U << depth); index++)
     {
+      uint8_t index_byte = (uint8_t)index;
+
       hash_init_prefix(&ctx, HASH_PREFIX_4);
       hash_update(&ctx, salt, AIMER_SALT_SIZE);
-      hash_update(&ctx, (const uint8_t*)&rep_index, sizeof(uint8_t));
-      hash_update(&ctx, (const uint8_t*)&index, sizeof(uint8_t));
+      hash_update(&ctx, &rep_byte, sizeof(rep_byte));
+      hash_update(&ctx, &index_byte, sizeof(index_byte));
       hash_update(&ctx, nodes[index - 2], AIMER_SEED_SIZE);
       hash_final(&ctx);
 

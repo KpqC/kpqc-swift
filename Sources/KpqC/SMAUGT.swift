@@ -1,3 +1,7 @@
+#if SWIFT_PACKAGE
+import KpqCCore
+#endif
+
 /// The SMAUG-T128 key-encapsulation parameter set.
 public let smaugt128 = KeyEncapsulationAlgorithm(
     id: "SMAUG-T128",

@@ -1,8 +1,7 @@
-/* kpqc-py: propagate OS entropy failures (2026-09-06). */
 // SPDX-License-Identifier: MIT
 
 #include "api.h"
-#include "aim2.h"
+#include "aim3.h"
 #include "field.h"
 #include "hash.h"
 #include "params.h"
@@ -22,10 +21,13 @@ static void commit_and_expand_tape(tape_t *tape, uint8_t *commit,
 {
   hash_instance ctx;
 
+  uint8_t rep_byte = (uint8_t)rep;
+  uint8_t party_byte = (uint8_t)party;
+
   hash_init_prefix(&ctx, HASH_PREFIX_5);
   hash_update(&ctx, salt, AIMER_SALT_SIZE);
-  hash_update(&ctx, (const uint8_t*)&rep, sizeof(uint8_t));
-  hash_update(&ctx, (const uint8_t*)&party, sizeof(uint8_t));
+  hash_update(&ctx, &rep_byte, sizeof(rep_byte));
+  hash_update(&ctx, &party_byte, sizeof(party_byte));
   hash_update(&ctx, seed, AIMER_SEED_SIZE);
   hash_final(&ctx);
 
@@ -34,25 +36,49 @@ static void commit_and_expand_tape(tape_t *tape, uint8_t *commit,
   hash_ctx_release(&ctx);
 }
 
+static inline void adjust_last_share(
+  proof_t *proof, tape_t *delta, tape_t *tape,
+  const gf pt_gf, const gf *sbox_outputs)
+{
+  gf_add(delta->pt_share, delta->pt_share, pt_gf);
+  gf_to_bytes(proof->delta_pt_bytes, delta->pt_share);
+  gf_add(tape->pt_share, delta->pt_share, tape->pt_share);
+
+  for (size_t i = 0; i < AIMER_L; i++)
+  {
+    gf_add(delta->y_shares[i], delta->y_shares[i], sbox_outputs[i]);
+    gf_to_bytes(proof->delta_ys_bytes[i], delta->y_shares[i]);
+    gf_add(tape->y_shares[i], delta->y_shares[i], tape->y_shares[i]);
+  }
+
+  // c = sum a[i] * y[i] where y = sbox outs
+  for (size_t i = 0; i < AIMER_L + 1; i++)
+  {
+    gf_mul_add(delta->c_share, delta->a_shares[i], sbox_outputs[i]);
+  }
+  gf_to_bytes(proof->delta_c_bytes, delta->c_share);
+  gf_add(tape->c_share, delta->c_share, tape->c_share);
+}
+
 // committing to the seeds and the execution views of the parties
+// Returns 0 on success or -1 on allocation failure.
 static int run_phase_1(signature_t *sign,
                        uint8_t commits[AIMER_T][AIMER_N][AIMER_COMMIT_SIZE],
                        uint8_t nodes[AIMER_T][2 * AIMER_N - 1][AIMER_SEED_SIZE],
                        mult_chk_t mult_chk[AIMER_T][AIMER_N],
-                       gf alpha_v_shares[AIMER_T][2][AIMER_N],
                        const uint8_t *sk, const uint8_t *rnd,
                        const uint8_t *m, size_t mlen,
                        const uint8_t *pre, size_t prelen)
 {
   gf pt_gf = {0,}, ct_gf = {0,};
   gf_from_bytes(pt_gf, sk);
-  gf_from_bytes(ct_gf, sk + AIM2_NUM_BYTES_FIELD + AIM2_IV_SIZE);
+  gf_from_bytes(ct_gf, sk + AIM3_NUM_BYTES_FIELD + AIM3_IV_SIZE);
 
   // message pre-hashing
   hash_instance ctx;
   hash_init_prefix(&ctx, HASH_PREFIX_0);
-  hash_update(&ctx, sk + AIM2_NUM_BYTES_FIELD,
-              AIM2_IV_SIZE + AIM2_NUM_BYTES_FIELD);
+  hash_update(&ctx, sk + AIM3_NUM_BYTES_FIELD,
+              AIM3_IV_SIZE + AIM3_NUM_BYTES_FIELD);
   hash_update(&ctx, pre, prelen);
   hash_update(&ctx, m, mlen);
   hash_final(&ctx);
@@ -61,22 +87,21 @@ static int run_phase_1(signature_t *sign,
   hash_squeeze(&ctx, mu, AIMER_COMMIT_SIZE);
   hash_ctx_release(&ctx);
 
-  // compute first L sboxes' outputs
-  gf sbox_outputs[AIMER_L];
-  aim2_sbox_outputs(sbox_outputs, pt_gf);
-
   // derive the binary matrix and the vector from the initial vector
-  gf(*matrix_A)[AIM2_NUM_BITS_FIELD] = malloc(sizeof(*matrix_A) * AIMER_L);
-  if (matrix_A == NULL)
+  aim_lin_t *lin = malloc(sizeof(aim_lin_t));
+  if (lin == NULL)
   {
     return -2;
   }
-  gf vector_b = {0,};
-  aim2_generate_linear(matrix_A, vector_b, sk + AIM2_NUM_BYTES_FIELD);
+  aim3_generate_linear(lin, sk + AIM3_NUM_BYTES_FIELD);
+
+  // compute sboxes' outputs
+  gf sbox_outputs[AIMER_L + 1];
+  aim3_sbox_outputs(sbox_outputs, lin, pt_gf, ct_gf);
 
   // generate salt
   hash_init_prefix(&ctx, HASH_PREFIX_3);
-  hash_update(&ctx, sk, AIM2_NUM_BYTES_FIELD);
+  hash_update(&ctx, sk, AIM3_NUM_BYTES_FIELD);
   hash_update(&ctx, mu, AIMER_COMMIT_SIZE);
   hash_update(&ctx, rnd, SECURITY_BYTES);
   hash_final(&ctx);
@@ -91,6 +116,9 @@ static int run_phase_1(signature_t *sign,
   hash_init_prefix(&ctx, HASH_PREFIX_1);
   hash_update(&ctx, mu, AIMER_COMMIT_SIZE);
   hash_update(&ctx, sign->salt, AIMER_SALT_SIZE);
+
+  // ct_gf is part of the public key, so it is public throughout the MPC
+  crypto_declassify(ct_gf, sizeof(ct_gf));
 
   for (size_t rep = 0; rep < AIMER_T; rep++)
   {
@@ -111,51 +139,29 @@ static int run_phase_1(signature_t *sign,
       gf_add(delta.pt_share, delta.pt_share, tape.pt_share);
       for (size_t i = 0; i < AIMER_L; i++)
       {
-        gf_add(delta.t_shares[i], delta.t_shares[i], tape.t_shares[i]);
+        gf_add(delta.y_shares[i], delta.y_shares[i], tape.y_shares[i]);
       }
-      gf_add(delta.a_share, delta.a_share, tape.a_share);
+      for (size_t i = 0; i < AIMER_L + 1; i++)
+      {
+        gf_add(delta.a_shares[i], delta.a_shares[i], tape.a_shares[i]);
+      }
       gf_add(delta.c_share, delta.c_share, tape.c_share);
-      gf_set0(mult_chk[rep][party].x_shares[AIMER_L]);
 
       // adjust the last share and prepare the proof and h_1
       if (party == AIMER_N - 1)
       {
-        gf_add(delta.pt_share, delta.pt_share, pt_gf);
-        gf_to_bytes(sign->proofs[rep].delta_pt_bytes, delta.pt_share);
-        gf_add(tape.pt_share, delta.pt_share, tape.pt_share);
-
-        for (size_t i = 0; i < AIMER_L; i++)
-        {
-          gf_add(delta.t_shares[i], delta.t_shares[i], sbox_outputs[i]);
-          gf_to_bytes(sign->proofs[rep].delta_ts_bytes[i], delta.t_shares[i]);
-          gf_add(tape.t_shares[i], delta.t_shares[i], tape.t_shares[i]);
-        }
-
-        gf_mul_add(delta.c_share, pt_gf, delta.a_share);
-        gf_to_bytes(sign->proofs[rep].delta_c_bytes, delta.c_share);
-        gf_add(tape.c_share, delta.c_share, tape.c_share);
-
-        gf_copy(mult_chk[rep][party].x_shares[AIMER_L], vector_b);
+        adjust_last_share(&sign->proofs[rep], &delta, &tape, pt_gf,
+                          sbox_outputs);
       }
 
       // run the MPC simulation and prepare the mult check inputs
-      gf_copy(mult_chk[rep][party].pt_share, tape.pt_share);
-      for (size_t i = 0; i < AIMER_L; i++)
-      {
-        gf_copy(mult_chk[rep][party].x_shares[i], tape.t_shares[i]);
-      }
-      gf_copy(alpha_v_shares[rep][0][party], tape.a_share);
-      gf_copy(alpha_v_shares[rep][1][party], tape.c_share);
-
-      crypto_declassify(ct_gf, sizeof(ct_gf));
-      aim2_mpc(&mult_chk[rep][party],
-               (const gf(*)[AIM2_NUM_BITS_FIELD])matrix_A, ct_gf);
+      aim3_mpc(&mult_chk[rep][party], lin, &tape, ct_gf, party);
     }
     hash_update(&ctx, (const uint8_t*)commits[rep], AIMER_COMMIT_SIZE * AIMER_N);
 
     // NOTE: depend on the order of values in proof_t
     hash_update(&ctx, sign->proofs[rep].delta_pt_bytes,
-                AIM2_NUM_BYTES_FIELD * (AIMER_L + 2));
+                AIM3_NUM_BYTES_FIELD * (AIMER_L + 2));
   }
 
   // commit to salt, (all commitments of parties' seeds,
@@ -164,15 +170,17 @@ static int run_phase_1(signature_t *sign,
   hash_squeeze(&ctx, sign->h_1, AIMER_COMMIT_SIZE);
   hash_ctx_release(&ctx);
 
-  free(matrix_A);
+  free(lin);
   return 0;
 }
 
 static void run_phase_2_and_3(signature_t *sign,
-                              gf alpha_v_shares[AIMER_T][2][AIMER_N],
+                              gf alpha_shares[AIMER_T][AIMER_N][AIMER_L + 1],
+                              gf v_share[AIMER_T][AIMER_N],
                               const mult_chk_t mult_chk[AIMER_T][AIMER_N])
 {
   gf epsilons[AIMER_L + 1];
+  gf alpha[AIMER_L + 1];
 
   hash_instance ctx_e;
   hash_init(&ctx_e);
@@ -184,36 +192,50 @@ static void run_phase_2_and_3(signature_t *sign,
   hash_update(&ctx, sign->h_1, AIMER_COMMIT_SIZE);
   hash_update(&ctx, sign->salt, AIMER_SALT_SIZE);
 
-  gf alpha = {0,};
   for (size_t rep = 0; rep < AIMER_T; rep++)
   {
-    gf_set0(alpha);
     hash_squeeze(&ctx_e, (uint8_t *)epsilons, sizeof(epsilons));
 
     crypto_declassify(epsilons, sizeof(epsilons));
+
+    for (size_t ell = 0; ell < AIMER_L + 1; ell++)
+    {
+      gf_set0(alpha[ell]);
+    }
+
     for (size_t party = 0; party < AIMER_N; party++)
     {
-      // alpha_share = a_share + sum x_share[i] * eps[i]
-      // v_share = c_share - pt_share * alpha + sum z_share[i] * eps[i]
+      // alpha_share[ell] = a_share[ell] + x_share[ell] * eps[ell]
+      // v_share = c_share - sum alpha[ell] * b_share[ell] + sum z_share[ell] * eps[ell]
+      gf_copy(v_share[rep][party], mult_chk[rep][party].c_share);
       for (size_t ell = 0; ell < AIMER_L + 1; ell++)
       {
-        gf_mul_add(alpha_v_shares[rep][0][party],
+        gf_copy(alpha_shares[rep][party][ell],
+                mult_chk[rep][party].a_shares[ell]);
+        gf_mul_add(alpha_shares[rep][party][ell],
                    mult_chk[rep][party].x_shares[ell], epsilons[ell]);
-        gf_mul_add(alpha_v_shares[rep][1][party],
+
+        gf_add(alpha[ell], alpha[ell], alpha_shares[rep][party][ell]);
+
+        gf_mul_add(v_share[rep][party],
                    mult_chk[rep][party].z_shares[ell], epsilons[ell]);
       }
-      gf_add(alpha, alpha, alpha_v_shares[rep][0][party]);
     }
 
     // alpha is opened, so we can finish calculating v_share
     crypto_declassify(alpha, sizeof(alpha));
     for (size_t party = 0; party < AIMER_N; party++)
     {
-      gf_mul_add(alpha_v_shares[rep][1][party],
-                 mult_chk[rep][party].pt_share, alpha);
+      for (size_t ell = 0; ell < AIMER_L + 1; ell++)
+      {
+        gf_mul_add(v_share[rep][party],
+                   mult_chk[rep][party].b_shares[ell], alpha[ell]);
+      }
     }
-    hash_update(&ctx, (const uint8_t *)alpha_v_shares[rep],
-                AIM2_NUM_BYTES_FIELD * 2 * AIMER_N);
+    hash_update(&ctx, (const uint8_t *)alpha_shares[rep],
+                AIM3_NUM_BYTES_FIELD * AIMER_N * (AIMER_L + 1));
+    hash_update(&ctx, (const uint8_t *)v_share[rep],
+                AIM3_NUM_BYTES_FIELD * AIMER_N);
   }
   hash_final(&ctx);
   hash_squeeze(&ctx, sign->h_2, AIMER_COMMIT_SIZE);
@@ -222,14 +244,12 @@ static void run_phase_2_and_3(signature_t *sign,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void crypto_sign_keypair_internal(uint8_t *pk, uint8_t *sk,
-                                  const uint8_t *pt, const uint8_t *iv)
+// Returns 0 on success, -1 when a zero S-box input requires a retry with fresh
+// randomness, and a value < -1 for a fatal error such as an allocation failure.
+static int crypto_sign_keypair_internal(uint8_t *ct,
+                                        const uint8_t *pt, const uint8_t *iv)
 {
-  aim2(pk + AIM2_IV_SIZE, pt, iv);
-
-  memcpy(pk, iv, AIM2_IV_SIZE);
-  memcpy(sk, pt, AIM2_NUM_BYTES_FIELD);
-  memcpy(sk + AIM2_NUM_BYTES_FIELD, pk, AIM2_IV_SIZE + AIM2_NUM_BYTES_FIELD);
+  return aim3_nozeroinpsb(ct, pt, iv);
 }
 
 int crypto_sign_keypair(uint8_t *pk, uint8_t *sk)
@@ -239,20 +259,41 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk)
     return -1;
   }
 
-  uint8_t pt[AIM2_NUM_BYTES_FIELD];
-  uint8_t iv[AIM2_IV_SIZE];
+  uint8_t pt[AIM3_NUM_BYTES_FIELD];
+  uint8_t iv[AIM3_IV_SIZE];
+  uint8_t ct[AIM3_NUM_BYTES_FIELD];
 
-  if (randombytes(pt, AIM2_NUM_BYTES_FIELD) != 0) return -1;
-  if (randombytes(iv, AIM2_IV_SIZE) != 0) return -1;
-  crypto_sign_keypair_internal(pk, sk, pt, iv);
+  while (true)
+  {
+    if (randombytes(pt, AIM3_NUM_BYTES_FIELD) != 0 ||
+        randombytes(iv, AIM3_IV_SIZE) != 0)
+    {
+      return -1;
+    }
+    int ret = crypto_sign_keypair_internal(ct, pt, iv);
+    if (ret == 0)
+    {
+      break;
+    }
+    if (ret != -1)
+    {
+      // allocation failure: do not retry
+      return ret;
+    }
+  }
+
+  memcpy(pk, iv, AIM3_IV_SIZE);
+  memcpy(pk + AIM3_IV_SIZE, ct, AIM3_NUM_BYTES_FIELD);
+  memcpy(sk, pt, AIM3_NUM_BYTES_FIELD);
+  memcpy(sk + AIM3_NUM_BYTES_FIELD, pk, AIM3_IV_SIZE + AIM3_NUM_BYTES_FIELD);
 
   return 0;
 }
 
-int crypto_sign_signature_internal(uint8_t *sig, size_t *siglen,
-                                   const uint8_t *m, size_t mlen,
-                                   const uint8_t *pre, size_t prelen,
-                                   const uint8_t *rnd, const uint8_t *sk)
+static int crypto_sign_signature_internal(uint8_t *sig, size_t *siglen,
+                                          const uint8_t *m, size_t mlen,
+                                          const uint8_t *pre, size_t prelen,
+                                          const uint8_t *rnd, const uint8_t *sk)
 {
   signature_t *sign = (signature_t *)sig;
 
@@ -269,30 +310,38 @@ int crypto_sign_signature_internal(uint8_t *sig, size_t *siglen,
     malloc(sizeof(*commits) * AIMER_T);
 
   // multiplication check inputs
-  mult_chk_t (*mult_chk)[AIMER_N] = calloc(AIMER_T, sizeof(*mult_chk));
+  mult_chk_t (*mult_chk)[AIMER_N] = malloc(sizeof(*mult_chk) * AIMER_T);
 
   // multiplication check outputs
-  gf(*alpha_v_shares)[2][AIMER_N] = calloc(AIMER_T, sizeof(*alpha_v_shares));
+  gf (*alpha_shares)[AIMER_N][AIMER_L + 1] =
+    malloc(sizeof(*alpha_shares) * AIMER_T);
+  gf (*v_share)[AIMER_N] = malloc(sizeof(*v_share) * AIMER_T);
 
-  if (nodes == NULL || commits == NULL || mult_chk == NULL ||
-      alpha_v_shares == NULL)
+  if (!nodes || !commits || !mult_chk || !alpha_shares || !v_share)
   {
     free(nodes);
     free(commits);
     free(mult_chk);
-    free(alpha_v_shares);
+    free(alpha_shares);
+    free(v_share);
     return -2;
   }
 
+  memset(mult_chk, 0, AIMER_T * sizeof(*mult_chk));
+  memset(alpha_shares, 0, AIMER_T * sizeof(*alpha_shares));
+  memset(v_share, 0, AIMER_T * sizeof(*v_share));
+
   // commitments for phase 1
-  if (run_phase_1(sign, commits, nodes, mult_chk, alpha_v_shares, sk, rnd,
-                  m, mlen, pre, prelen) != 0)
+  int status = run_phase_1(sign, commits, nodes, mult_chk, sk, rnd, m, mlen,
+                           pre, prelen);
+  if (status != 0)
   {
     free(nodes);
     free(commits);
     free(mult_chk);
-    free(alpha_v_shares);
-    return -2;
+    free(alpha_shares);
+    free(v_share);
+    return status;
   }
 
   /////////////////////////////////////////////////////////////////
@@ -301,7 +350,7 @@ int crypto_sign_signature_internal(uint8_t *sig, size_t *siglen,
   /////////////////////////////////////////////////////////////////
 
   // compute the commitment of phase 3
-  run_phase_2_and_3(sign, alpha_v_shares,
+  run_phase_2_and_3(sign, alpha_shares, v_share,
                     (const mult_chk_t (*)[AIMER_N])mult_chk);
 
   //////////////////////////////////////////////////////
@@ -333,15 +382,19 @@ int crypto_sign_signature_internal(uint8_t *sig, size_t *siglen,
                    (const uint8_t (*)[AIMER_SEED_SIZE])nodes[rep], i_bar);
     memcpy(sign->proofs[rep].missing_commitment, commits[rep][i_bar],
            AIMER_COMMIT_SIZE);
-    gf_to_bytes(sign->proofs[rep].missing_alpha_share_bytes,
-                alpha_v_shares[rep][0][i_bar]);
+    for (size_t ell = 0; ell < AIMER_L + 1; ell++)
+    {
+      gf_to_bytes(sign->proofs[rep].missing_alpha_share_bytes[ell],
+                  alpha_shares[rep][i_bar][ell]);
+    }
   }
   *siglen = CRYPTO_BYTES;
 
   free(nodes);
   free(commits);
   free(mult_chk);
-  free(alpha_v_shares);
+  free(alpha_shares);
+  free(v_share);
   return 0;
 }
 
@@ -364,7 +417,10 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen,
   }
 
 #ifdef RANDOMIZED_SIGNING
-  if (randombytes(randomness, SECURITY_BYTES) != 0) return -1;
+  if (randombytes(randomness, SECURITY_BYTES) != 0)
+  {
+    return -1;
+  }
 #else
   for (size_t i = 0; i < SECURITY_BYTES; i++)
   {
@@ -379,25 +435,69 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen,
 int crypto_sign(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen,
                 const uint8_t *ctx, size_t ctxlen, const uint8_t *sk)
 {
-  int ret;
-  ret = crypto_sign_signature(sm + mlen, smlen, m, mlen, ctx, ctxlen, sk);
-
+  int ret = crypto_sign_signature(sm + mlen, smlen, m, mlen, ctx, ctxlen, sk);
   if (ret != 0)
   {
-    *smlen = 0;
     return ret;
   }
 
   memcpy(sm, m, mlen);
   *smlen += mlen;
 
-  return ret;
+  return 0;
 }
 
-int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
-                                const uint8_t *m, size_t mlen,
-                                const uint8_t *pre, size_t prelen,
-                                const uint8_t *pk)
+static inline void recompute_last_share(const proof_t *proof, tape_t *tape)
+{
+  gf temp = {0,};
+
+  gf_from_bytes(temp, proof->delta_pt_bytes);
+  gf_add(tape->pt_share, tape->pt_share, temp);
+
+  for (size_t ell = 0; ell < AIMER_L; ell++)
+  {
+    gf_from_bytes(temp, proof->delta_ys_bytes[ell]);
+    gf_add(tape->y_shares[ell], tape->y_shares[ell], temp);
+  }
+
+  gf_from_bytes(temp, proof->delta_c_bytes);
+  gf_add(tape->c_share, tape->c_share, temp);
+}
+
+static inline void recompute_missing_alpha(const proof_t *proof,
+                                           gf *alpha_shares, gf *alpha)
+{
+  for (size_t ell = 0; ell < AIMER_L + 1; ell++)
+  {
+    gf_from_bytes(alpha_shares[ell],
+                  proof->missing_alpha_share_bytes[ell]);
+    gf_add(alpha[ell], alpha[ell], alpha_shares[ell]);
+  }
+}
+
+static inline void recompute_v_shares(gf *v_shares,
+                                      gf (*b_shares)[AIMER_L + 1],
+                                      gf *alpha, size_t i_bar)
+{
+  gf_set0(v_shares[i_bar]);
+  for (size_t party = 0; party < AIMER_N; party++)
+  {
+    if (party == i_bar)
+    {
+      continue;
+    }
+    for (size_t ell = 0; ell < AIMER_L + 1; ell++)
+    {
+      gf_mul_add(v_shares[party], b_shares[party][ell], alpha[ell]);
+    }
+    gf_add(v_shares[i_bar], v_shares[i_bar], v_shares[party]);
+  }
+}
+
+static int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
+                                       const uint8_t *m, size_t mlen,
+                                       const uint8_t *pre, size_t prelen,
+                                       const uint8_t *pk)
 {
   if (siglen != CRYPTO_BYTES)
   {
@@ -407,27 +507,15 @@ int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
   const signature_t *sign = (const signature_t *)sig;
 
   gf ct_gf = {0,};
-  gf_from_bytes(ct_gf, pk + AIM2_IV_SIZE);
+  gf_from_bytes(ct_gf, pk + AIM3_IV_SIZE);
 
   // derive the binary matrix and the vector from the initial vector
-  gf(*matrix_A)[AIM2_NUM_BITS_FIELD] = malloc(sizeof(*matrix_A) * AIMER_L);
-  uint8_t (*nodes)[AIMER_SEED_SIZE] =
-    malloc(sizeof(*nodes) * (2 * AIMER_N - 2));
-  gf *pt_shares = malloc(AIMER_N * sizeof(gf));
-  gf *alpha_shares = malloc(AIMER_N * sizeof(gf));
-  gf *v_shares = malloc(AIMER_N * sizeof(gf));
-  if (matrix_A == NULL || nodes == NULL || pt_shares == NULL ||
-      alpha_shares == NULL || v_shares == NULL)
+  aim_lin_t *lin = malloc(sizeof(aim_lin_t));
+  if (lin == NULL)
   {
-    free(matrix_A);
-    free(nodes);
-    free(pt_shares);
-    free(alpha_shares);
-    free(v_shares);
     return -2;
   }
-  gf vector_b = {0,};
-  aim2_generate_linear(matrix_A, vector_b, pk);
+  aim3_generate_linear(lin, pk);
 
   hash_instance ctx_e, ctx_h1, ctx_h2;
 
@@ -452,7 +540,7 @@ int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
   // message pre-hashing
   uint8_t mu[AIMER_COMMIT_SIZE];
   hash_init_prefix(&ctx_h1, HASH_PREFIX_0);
-  hash_update(&ctx_h1, pk, AIM2_IV_SIZE + AIM2_NUM_BYTES_FIELD);
+  hash_update(&ctx_h1, pk, AIM3_IV_SIZE + AIM3_NUM_BYTES_FIELD);
   hash_update(&ctx_h1, pre, prelen);
   hash_update(&ctx_h1, m, mlen);
   hash_final(&ctx_h1);
@@ -468,6 +556,23 @@ int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
   hash_update(&ctx_h2, sign->h_1, AIMER_COMMIT_SIZE);
   hash_update(&ctx_h2, sign->salt, AIMER_SALT_SIZE);
 
+  uint8_t (*nodes)[AIMER_SEED_SIZE] =
+    malloc(sizeof(*nodes) * (2 * AIMER_N - 2));
+
+  gf (*b_shares)[AIMER_L + 1] = malloc(AIMER_N * sizeof(*b_shares));
+  gf (*alpha_shares)[AIMER_L + 1] = malloc(AIMER_N * sizeof(*alpha_shares));
+  gf *v_shares = malloc(AIMER_N * sizeof(gf));
+
+  if (!nodes || !b_shares || !alpha_shares || !v_shares)
+  {
+    free(lin);
+    free(nodes);
+    free(b_shares);
+    free(alpha_shares);
+    free(v_shares);
+    return -2;
+  }
+
   for (size_t rep = 0; rep < AIMER_T; rep++)
   {
     size_t i_bar = indices[rep];
@@ -477,16 +582,16 @@ int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
     gf epsilons[AIMER_L + 1];
     hash_squeeze(&ctx_e, (uint8_t *)epsilons, sizeof(epsilons));
 
-    gf alpha = {0,};
+    gf alpha[AIMER_L + 1];
+    memset(alpha, 0, sizeof(alpha));
+
     for (size_t party = 0; party < AIMER_N; party++)
     {
       if (party == i_bar)
       {
         hash_update(&ctx_h1, sign->proofs[rep].missing_commitment,
                     AIMER_COMMIT_SIZE);
-        gf_from_bytes(alpha_shares[i_bar],
-                      sign->proofs[rep].missing_alpha_share_bytes);
-        gf_add(alpha, alpha, alpha_shares[i_bar]);
+        recompute_missing_alpha(&sign->proofs[rep], alpha_shares[i_bar], alpha);
         continue;
       }
 
@@ -501,61 +606,36 @@ int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
       memset(&mult_chk, 0, sizeof(mult_chk_t));
       if (party == AIMER_N - 1)
       {
-        gf temp = {0,};
-
-        gf_from_bytes(temp, sign->proofs[rep].delta_pt_bytes);
-        gf_add(tape.pt_share, tape.pt_share, temp);
-
-        for (size_t ell = 0; ell < AIMER_L; ell++)
-        {
-          gf_from_bytes(temp, sign->proofs[rep].delta_ts_bytes[ell]);
-          gf_add(tape.t_shares[ell], tape.t_shares[ell], temp);
-        }
-
-        gf_from_bytes(temp, sign->proofs[rep].delta_c_bytes);
-        gf_add(tape.c_share, tape.c_share, temp);
-
-        gf_copy(mult_chk.x_shares[AIMER_L], vector_b);
+        recompute_last_share(&sign->proofs[rep], &tape);
       }
 
       // run the MPC simulation and prepare the mult check inputs
-      for (size_t ell = 0; ell < AIMER_L; ell++)
-      {
-        gf_copy(mult_chk.x_shares[ell], tape.t_shares[ell]);
-      }
-      gf_copy(pt_shares[party], tape.pt_share);
-      gf_copy(alpha_shares[party], tape.a_share);
-      gf_copy(v_shares[party], tape.c_share);
-      aim2_mpc(&mult_chk, (const gf(*)[AIM2_NUM_BITS_FIELD])matrix_A, ct_gf);
+      aim3_mpc(&mult_chk, lin, &tape, ct_gf, party);
 
+      gf_copy(v_shares[party], mult_chk.c_share);
       for (size_t ell = 0; ell < AIMER_L + 1; ell++)
       {
-        gf_mul_add(alpha_shares[party], mult_chk.x_shares[ell], epsilons[ell]);
+        gf_copy(alpha_shares[party][ell], mult_chk.a_shares[ell]);
+        gf_mul_add(alpha_shares[party][ell], mult_chk.x_shares[ell],
+                   epsilons[ell]);
+        gf_add(alpha[ell], alpha[ell], alpha_shares[party][ell]);
+
+        gf_copy(b_shares[party][ell], mult_chk.b_shares[ell]);
         gf_mul_add(v_shares[party], mult_chk.z_shares[ell], epsilons[ell]);
       }
-      gf_add(alpha, alpha, alpha_shares[party]);
     }
 
     // alpha is opened, so we can finish calculating v_share
-    gf_set0(v_shares[i_bar]);
-    for (size_t party = 0; party < AIMER_N; party++)
-    {
-      if (party == i_bar)
-      {
-        continue;
-      }
-
-      gf_mul_add(v_shares[party], pt_shares[party], alpha);
-      gf_add(v_shares[i_bar], v_shares[i_bar], v_shares[party]);
-    }
+    recompute_v_shares(v_shares, b_shares, alpha, i_bar);
 
     // v is opened
-    hash_update(&ctx_h2, (const uint8_t *)alpha_shares, AIMER_N * sizeof(gf));
-    hash_update(&ctx_h2, (const uint8_t *)v_shares, AIMER_N * sizeof(gf));
-
+    hash_update(&ctx_h2, (const uint8_t *)alpha_shares,
+                AIM3_NUM_BYTES_FIELD * AIMER_N * (AIMER_L + 1));
+    hash_update(&ctx_h2, (const uint8_t *)v_shares,
+                AIM3_NUM_BYTES_FIELD * AIMER_N);
     // NOTE: depend on the order of values in proof_t
     hash_update(&ctx_h1, sign->proofs[rep].delta_pt_bytes,
-                AIM2_NUM_BYTES_FIELD * (AIMER_L + 2));
+                AIM3_NUM_BYTES_FIELD * (AIMER_L + 2));
   }
   hash_ctx_release(&ctx_e);
 
@@ -569,9 +649,9 @@ int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
   hash_squeeze(&ctx_h2, h_2_prime, AIMER_COMMIT_SIZE);
   hash_ctx_release(&ctx_h2);
 
-  free(matrix_A);
+  free(lin);
   free(nodes);
-  free(pt_shares);
+  free(b_shares);
   free(alpha_shares);
   free(v_shares);
 
@@ -617,11 +697,10 @@ int crypto_sign_open(uint8_t *m, size_t *mlen, const uint8_t *sm, size_t smlen,
   const uint8_t *message = sm;
   const uint8_t *signature = sm + message_len;
 
-  int ret = crypto_sign_verify(signature, CRYPTO_BYTES, message, message_len,
-                               ctx, ctxlen, pk);
-  if (ret != 0)
+  if (crypto_sign_verify(signature, CRYPTO_BYTES, message, message_len,
+                         ctx, ctxlen, pk))
   {
-    return ret;
+    return -1;
   }
 
   memmove(m, message, message_len);

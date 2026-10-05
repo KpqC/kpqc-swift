@@ -1,16 +1,16 @@
 Pod::Spec.new do |spec|
   spec.name = "KpqC"
-  spec.version = "0.1.0"
+  spec.version = "0.2.0"
   spec.summary = "Swift APIs for AIMer, HAETAE, NTRU+, and SMAUG-T."
   spec.description = <<-DESC
     Synchronous Swift bindings for the bundled AIMer and HAETAE signature
     schemes and NTRU+ and SMAUG-T key-encapsulation mechanisms.
   DESC
-  spec.homepage = "https://github.com/osuolfou/kpqc-swift"
+  spec.homepage = "https://github.com/KpqC/kpqc-swift"
   spec.license = { type: "MIT", file: "LICENSE" }
   spec.author = { "osuolfou" => "osuolfou@naver.com" }
   spec.source = {
-    git: "https://github.com/osuolfou/kpqc-swift.git",
+    git: "https://github.com/KpqC/kpqc-swift.git",
     tag: "v#{spec.version}"
   }
 

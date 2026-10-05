@@ -14,8 +14,8 @@
 typedef struct tape_t
 {
   gf pt_share;
-  gf t_shares[AIMER_L];
-  gf a_share;
+  gf y_shares[AIMER_L];
+  gf a_shares[AIMER_L + 1];
   gf c_share;
 } tape_t;
 
@@ -23,10 +23,10 @@ typedef struct proof_t
 {
   uint8_t reveal_path[AIMER_LOGN][AIMER_SEED_SIZE];
   uint8_t missing_commitment[AIMER_COMMIT_SIZE];
-  uint8_t delta_pt_bytes[AIM2_NUM_BYTES_FIELD];
-  uint8_t delta_ts_bytes[AIMER_L][AIM2_NUM_BYTES_FIELD];
-  uint8_t delta_c_bytes[AIM2_NUM_BYTES_FIELD];
-  uint8_t missing_alpha_share_bytes[AIM2_NUM_BYTES_FIELD];
+  uint8_t delta_pt_bytes[AIM3_NUM_BYTES_FIELD];
+  uint8_t delta_ys_bytes[AIMER_L][AIM3_NUM_BYTES_FIELD];
+  uint8_t delta_c_bytes[AIM3_NUM_BYTES_FIELD];
+  uint8_t missing_alpha_share_bytes[AIMER_L + 1][AIM3_NUM_BYTES_FIELD];
 } proof_t;
 
 typedef struct signature_t

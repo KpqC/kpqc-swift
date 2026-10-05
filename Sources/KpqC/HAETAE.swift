@@ -1,3 +1,7 @@
+#if SWIFT_PACKAGE
+import KpqCCore
+#endif
+
 /// The HAETAE2 signature parameter set.
 public let haetae2 = SignatureAlgorithm(
     id: "haetae-mode2",

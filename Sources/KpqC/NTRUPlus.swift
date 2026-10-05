@@ -1,3 +1,7 @@
+#if SWIFT_PACKAGE
+import KpqCCore
+#endif
+
 /// The NTRU+768 key-encapsulation parameter set.
 public let ntruplus768 = KeyEncapsulationAlgorithm(
     id: "NTRU+768",

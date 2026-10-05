@@ -16,5 +16,7 @@ jobs:
 
       - run: ./scripts/test.sh
       - run: test -z "$(git status --short --untracked-files=all -- Sources/KpqCCore/Generated)"
+      - run: swift package dump-package
+      - run: swift test
       - run: gem install cocoapods --no-document
       - run: pod lib lint KpqC.podspec

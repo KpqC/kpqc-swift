@@ -1,4 +1,7 @@
 import Foundation
+#if SWIFT_PACKAGE
+import KpqCCore
+#endif
 
 /// A generated public and secret key pair.
 public final class KeyPair {

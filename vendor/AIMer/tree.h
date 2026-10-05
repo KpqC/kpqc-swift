@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define expand_tree AIMER_NAMESPACE(expand_trees)
+#define expand_tree AIMER_NAMESPACE(expand_tree)
 void expand_tree(uint8_t nodes[2 * AIMER_N - 1][AIMER_SEED_SIZE],
                  const uint8_t salt[AIMER_SALT_SIZE], size_t rep_index,
                  const uint8_t seed[AIMER_SEED_SIZE]);

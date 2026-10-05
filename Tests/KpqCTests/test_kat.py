@@ -11,12 +11,12 @@ from kat_drbg import CtrDrbg, aes256_encrypt
 
 KAT_DIR = Path(__file__).with_name("kat")
 SIGNATURES = (
-    ("aimer128f", 32, 48, 5_888),
-    ("aimer128s", 32, 48, 4_160),
-    ("aimer192f", 48, 72, 13_056),
-    ("aimer192s", 48, 72, 9_120),
-    ("aimer256f", 64, 96, 25_120),
-    ("aimer256s", 64, 96, 17_056),
+    ("aimer128f", 32, 48, 6_944),
+    ("aimer128s", 32, 48, 4_704),
+    ("aimer192f", 48, 72, 15_408),
+    ("aimer192s", 48, 72, 10_320),
+    ("aimer256f", 64, 96, 31_360),
+    ("aimer256s", 64, 96, 20_224),
     ("haetae2", 992, 1_408, 1_474),
     ("haetae3", 1_472, 2_112, 2_349),
     ("haetae5", 2_080, 2_752, 2_948),

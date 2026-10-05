@@ -7,12 +7,23 @@ SMAUG-T.
 
 - Swift 5.8 or newer
 - iOS 15, macOS 12, tvOS 15, or watchOS 9 and newer
-- CocoaPods
+- CocoaPods or Swift Package Manager
 
 ## Install
 
+### Swift Package Manager
+
+Add `https://github.com/KpqC/kpqc-swift` as a package dependency and select
+the `KpqC` product, or add it to `Package.swift`:
+
+```swift
+.package(url: "https://github.com/KpqC/kpqc-swift.git", from: "0.2.0")
+```
+
+### CocoaPods
+
 ```ruby
-pod 'KpqC', '~> 0.1'
+pod 'KpqC', '~> 0.2'
 ```
 
 Then run `pod install` and import the module:
@@ -20,6 +31,9 @@ Then run `pod install` and import the module:
 ```swift
 import KpqC
 ```
+
+KpqC 0.2.0 uses AIM3. AIMer keys and signatures from the 0.1.x AIM2 release
+are not compatible with this version.
 
 ## Available schemes
 
@@ -111,12 +125,12 @@ All sizes are in bytes.
 
 | Algorithm | Public key | Secret key | Signature |
 | --- | ---: | ---: | ---: |
-| `aimer128f` | 32 | 48 | 5,888 |
-| `aimer128s` | 32 | 48 | 4,160 |
-| `aimer192f` | 48 | 72 | 13,056 |
-| `aimer192s` | 48 | 72 | 9,120 |
-| `aimer256f` | 64 | 96 | 25,120 |
-| `aimer256s` | 64 | 96 | 17,056 |
+| `aimer128f` | 32 | 48 | 6,944 |
+| `aimer128s` | 32 | 48 | 4,704 |
+| `aimer192f` | 48 | 72 | 15,408 |
+| `aimer192s` | 48 | 72 | 10,320 |
+| `aimer256f` | 64 | 96 | 31,360 |
+| `aimer256s` | 64 | 96 | 20,224 |
 | `haetae2` | 992 | 1,408 | 1,474 |
 | `haetae3` | 1,472 | 2,112 | 2,349 |
 | `haetae5` | 2,080 | 2,752 | 2,948 |
