@@ -208,7 +208,7 @@ int32_t complex_fp_sqabs(complex_fp32_16 x) {
  *
  * Arguments:   - complex_fp32_16 data[FFT_N]
  *
- * Specification: Implements Algorithm 43, FFT.
+ * Specification: Implements @[Algorithm 49, FFT]
  **************************************************/
 void fft(complex_fp32_16 data[FFT_N]) {
   unsigned int r, m, md2, n, k, even, odd, twid;

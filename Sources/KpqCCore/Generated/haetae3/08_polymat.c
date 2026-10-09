@@ -21,7 +21,7 @@
  * Arguments:   - polyvecm mat[HAETAE_K]: output matrix k \times m
  *              - const uint8_t rho[]: byte array containing seed rho
  *
- * Specification: Implements Algorithm 4, ExpandMatA.
+ * Specification: Implements @[Algorithm 6, ExpandMatA]
  **************************************************/
 void polymatkl_expand_matA(polyvecl mat[HAETAE_K],
                            const uint8_t rho[HAETAE_SEEDBYTES]) {
@@ -43,7 +43,7 @@ void polymatkl_expand_matA(polyvecl mat[HAETAE_K],
  * Arguments:   - polyvecm mat[HAETAE_K]: output matrix k \times m
  *              - const uint8_t rho[]: byte array containing seed rho
  *
- * Specification: Implements Algorithm 4, ExpandMatA.
+ * Specification: Implements @[Algorithm 6, ExpandMatA]
  **************************************************/
 void polymatkm_expand_matA(polyvecm mat[HAETAE_K],
                            const uint8_t rho[HAETAE_SEEDBYTES]) {

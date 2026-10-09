@@ -48,6 +48,8 @@ static const int32_t zetas[HAETAE_N] = {
  *              order.
  *
  * Arguments:   - uint32_t p[HAETAE_N]: input/output coefficient array
+ *
+ * Specification: Implements @[Algorithm 2, NTT]
  **************************************************/
 void ntt(int32_t a[HAETAE_N]) {
   unsigned int len, start, j, k;

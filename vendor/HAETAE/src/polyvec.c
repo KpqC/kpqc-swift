@@ -117,7 +117,7 @@ void polyveck_freeze2q(polyveck *v) {
  *              - const uint8_t seed[]: byte array with seed of length
  *              HAETAE_SEEDBYTES
  *
- * Specification: Implements Algorithm 5, ExpandVec_a.
+ * Specification: Implements @[Algorithm 7, ExpandVeca]
  **************************************************/
 void polyveck_expand_vecA(polyveck *v, const uint8_t seed[HAETAE_SEEDBYTES]) {
   unsigned int i, nonce = (HAETAE_K << 8) + HAETAE_M;
@@ -138,7 +138,7 @@ void polyveck_expand_vecA(polyveck *v, const uint8_t seed[HAETAE_SEEDBYTES]) {
  *              HAETAE_CRHBYTES
  *              - uint16_t nonce: 2-byte nonce
  *
- * Specification: Implements Algorithm 8, ExpandS.
+ * Specification: Implements @[Algorithm 10, ExpandS]
  **************************************************/
 void polyvecmk_expand_S(polyvecm *u, polyveck *v,
                         const uint8_t seed[HAETAE_CRHBYTES], uint16_t nonce) {
@@ -203,6 +203,8 @@ void polyveck_poly_pointwise_montgomery(polyveck *w, const polyveck *u,
  *              - const polyveck *u: pointer to the input vector of polynomials
  *              of length HAETAE_K
  *              - const poly *v: pointer to the input polynomial ("mod 2")
+ *
+ * Specification: Implements @[Algorithm 3, iCRT]
  **************************************************/
 void polyveck_poly_fromcrt(polyveck *w, const polyveck *u, const poly *v) {
   unsigned int i;
@@ -451,7 +453,7 @@ void polyvecm_ntt(polyvecm *x) {
  * Arguments:   - int32_t *x: pointer to first input/output integer
  *              - int32_t *y: pointer to second input/output integer
  *
- * Specification: Implements Algorithm 44, minmax.
+ * Specification: Implements @[Algorithm 50, minmax]
  * **************************************************/
 static inline void minmax(int32_t *x, int32_t *y) // taken from djbsort
 {
@@ -475,7 +477,7 @@ static inline void minmax(int32_t *x, int32_t *y) // taken from djbsort
  *
  * Returns:
  *
- * Specification: Implements Algorithm 42, skSingularValue.
+ * Specification: Implements @[Algorithm 48, skSingularValue]
  **************************************************/
 int64_t polyvecmk_sk_singular_value(const polyvecm *s1, const polyveck *s2) {
   int32_t res = 0;
@@ -520,7 +522,7 @@ int64_t polyvecmk_sk_singular_value(const polyvecm *s1, const polyveck *s2) {
   for (size_t i = 0; i < HAETAE_N / HAETAE_TAU + 1; i++) {
     int32_t fac =
         ((min - bestm[i]) >>
-         31); // all-ones if bestm[i] != min
+         31); // all-ones if bestm[i] != min (TODO: impl specific behaviour)
     fac = (fac & (HAETAE_TAU)) ^
           ((~fac) & (HAETAE_N % HAETAE_TAU)); // fac = HAETAE_TAU for all != min
                                               // and N%HAETAE_TAU for min

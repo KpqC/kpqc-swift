@@ -21,6 +21,8 @@
  * Arguments:   - int64_t: finite field element a
  *
  * Returns r.
+ *
+ * Specification: Implements @[Algorithm 1, MontgomeryReduce]
  **************************************************/
 int32_t montgomery_reduce(int64_t a) {
   int32_t t;

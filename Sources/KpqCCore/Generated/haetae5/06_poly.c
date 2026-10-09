@@ -184,7 +184,7 @@ void poly_lsb(poly *a0, const poly *a) {
  *              HAETAE_SEEDBYTES
  *              - uint16_t nonce: 2-byte nonce
  *
- * Specification: Implements Algorithm 6, PolyUniform.
+ * Specification: Implements @[Algorithm 8, PolyUniform]
  **************************************************/
 #define POLY_UNIFORM_NBLOCKS                                                   \
   ((512 + STREAM128_BLOCKBYTES - 1) / STREAM128_BLOCKBYTES)
@@ -225,7 +225,7 @@ void poly_uniform(poly *a, const uint8_t seed[HAETAE_SEEDBYTES],
  *              HAETAE_CRHBYTES
  *              - uint16_t nonce: 2-byte nonce
  *
- * Specification: Implements Algorithm 9, PolyUniformEta.
+ * Specification: Implements @[Algorithm 11, PolyUniformEta]
  **************************************************/
 #define POLY_UNIFORM_ETA_NBLOCKS                                               \
   ((136 + STREAM256_BLOCKBYTES - 1) / STREAM256_BLOCKBYTES) // 1
@@ -266,7 +266,7 @@ uint8_t hammingWeight_8(uint8_t x) {
  *              - const uint8_t highbits_lsb[]: packed highbits and lsb
  *              - const uint8_t mu[]: hash of vk and message
  *
- * Specification: Implements Algorithm 16, SampleChallenge.
+ * Specification: Implements @[Algorithm 18, SampleChallenge]
  **************************************************/
 void poly_challenge(
     poly *c,
@@ -348,6 +348,20 @@ void poly_decomposed_unpack(poly *a, const uint8_t *buf) {
   }
 }
 
+/*************************************************
+ * Name:        poly_fromcrt
+ *
+ * Description: Compute coefficient-wise inverse CRT from the "mod q"
+ *              polynomial u and the "mod 2" polynomial v: if the LSBs of the
+ *              two coefficients agree, keep the "mod q" coefficient, otherwise
+ *              add q. Output coefficients lie in [0, 2q-1].
+ *
+ * Arguments:   - poly *w: pointer to output polynomial
+ *              - const poly *u: pointer to input polynomial ("mod q")
+ *              - const poly *v: pointer to input polynomial ("mod 2")
+ *
+ * Specification: Implements @[Algorithm 4, poly_fromcrt]
+ **************************************************/
 void poly_fromcrt(poly *w, const poly *u, const poly *v) {
   unsigned int i;
   int32_t xq, x2;
@@ -359,6 +373,19 @@ void poly_fromcrt(poly *w, const poly *u, const poly *v) {
   }
 }
 
+/*************************************************
+ * Name:        poly_fromcrt0
+ *
+ * Description: Compute coefficient-wise inverse CRT from the "mod q"
+ *              polynomial u, assuming the "mod 2" polynomial is zero: if the
+ *              LSB of a coefficient is zero, keep it, otherwise add q. Output
+ *              coefficients lie in [0, 2q-1].
+ *
+ * Arguments:   - poly *w: pointer to output polynomial
+ *              - const poly *u: pointer to input polynomial ("mod q")
+ *
+ * Specification: Implements @[Algorithm 5, poly_fromcrt0]
+ **************************************************/
 void poly_fromcrt0(poly *w, const poly *u) {
   unsigned int i;
   int32_t xq;

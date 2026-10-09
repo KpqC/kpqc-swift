@@ -12,7 +12,7 @@
 #include <string.h>
 
 #define SCALE_BITS 10
-#define SCALE (1u << SCALE_BITS)
+#define SCALE (UINT32_C(1) << SCALE_BITS)
 
 #if HAETAE_MODE == HAETAE_MODE2
 #define M_H 13
@@ -525,7 +525,7 @@ static uint16_t symbol_hb_z1[SCALE] = {
  * Arguments:   - uint8_t *buf: pointer to output buffer
  *              - const int32_t *h: pointer to polynomial vector h
  *
- * Specification: Implements Algorithm 38, EncodeH.
+ * Specification: Implements @[Algorithm 44, EncodeH]
  **************************************************/
 uint16_t encode_h(uint8_t *buf, const int32_t *h) {
   size_t size_encoded;
@@ -573,7 +573,7 @@ uint16_t encode_h(uint8_t *buf, const int32_t *h) {
  * Arguments:   - int32_t *h: pointer to polynomial vector h
  *              - uint8_t *buf: pointer to output buffer
  *
- * Specification: Implements Algorithm 39, DecodeH.
+ * Specification: Implements @[Algorithm 45, DecodeH]
  **************************************************/
 uint16_t decode_h(int32_t *h, const uint8_t *buf, uint16_t size_in) {
   size_t size_used;
@@ -619,7 +619,7 @@ uint16_t decode_h(int32_t *h, const uint8_t *buf, uint16_t size_in) {
  * Arguments:   - uint8_t *buf: pointer to output buffer
  *              - const int32_t *hb_z1: pointer to polynomial vector
  *
- * Specification: Implements Algorithm 40, EncodeHBz1.
+ * Specification: Implements @[Algorithm 46, EncodeHBz1]
  **************************************************/
 uint16_t encode_hb_z1(uint8_t *buf, const int32_t *hb_z1) {
   size_t size_encoded;
@@ -664,7 +664,7 @@ uint16_t encode_hb_z1(uint8_t *buf, const int32_t *hb_z1) {
  * Arguments:   - int32_t *hb_z1: pointer to polynomial vector HighBits(z1)
  *              - uint8_t *buf: pointer to output buffer
  *
- * Specification: Implements Algorithm 41, DecodeHBz1.
+ * Specification: Implements @[Algorithm 47, DecodeHBz1]
  **************************************************/
 uint16_t decode_hb_z1(int32_t *hb_z1, const uint8_t *buf, uint16_t size_in) {
   size_t size_used;

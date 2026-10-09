@@ -22,7 +22,7 @@
  *              containg b
  *              - const uint8_t seed[]: seed for A'
  *
- * Specification: Implements Algorithm 21, PackVK.
+ * Specification: Implements @[Algorithm 23, PackVK]
  **************************************************/
 void pack_vk(uint8_t vk[HAETAE_CRYPTO_PUBLICKEYBYTES], polyveck *b,
              const uint8_t seed[HAETAE_SEEDBYTES]) {
@@ -45,7 +45,7 @@ void pack_vk(uint8_t vk[HAETAE_CRYPTO_PUBLICKEYBYTES], polyveck *b,
  *              - polyveck *b: polynomial vector of length HAETAE_K containg b
  *              - const uint8_t vk[]: output byte array
  *
- * Specification: Implements Algorithm 22, UnpackVK.
+ * Specification: Implements @[Algorithm 24, UnpackVK]
  **************************************************/
 void unpack_vk(polyvecl A[HAETAE_K],
                const uint8_t vk[HAETAE_CRYPTO_PUBLICKEYBYTES]) {
@@ -87,7 +87,7 @@ void unpack_vk(polyvecl A[HAETAE_K],
  *                starting at offset 1)
  *              - const polyveck *s1: polyveck pointer containing s1
  *
- * Specification: Implements Algorithm 23, PackSK.
+ * Specification: Implements @[Algorithm 25, PackSK]
  **************************************************/
 void pack_sk(uint8_t sk[HAETAE_CRYPTO_SECRETKEYBYTES],
              const uint8_t vk[HAETAE_CRYPTO_PUBLICKEYBYTES], const polyvecm *s0,
@@ -124,7 +124,7 @@ void pack_sk(uint8_t sk[HAETAE_CRYPTO_SECRETKEYBYTES],
  *              - polyveck s1: output polyveck pointer for s1
  *              - const uint8_t sk[]: byte array containing bit-packed sk
  *
- * Specification: Implements Algorithm 24, UnpackSK.
+ * Specification: Implements @[Algorithm 26, UnPackSK]
  **************************************************/
 void unpack_sk(polyvecl A[HAETAE_K], polyvecm *s0, polyveck *s1, uint8_t *key,
                const uint8_t sk[HAETAE_CRYPTO_SECRETKEYBYTES]) {
@@ -165,7 +165,7 @@ void unpack_sk(polyvecl A[HAETAE_K], polyvecm *s0, polyveck *s1, uint8_t *key,
  *              - const polyveck *h: pointer t vector h of length HAETAE_K
  * Returns 1 in case the signature packing failed; otherwise 0.
  *
- * Specification: Implements Algorithm 25, PackSig.
+ * Specification: Implements @[Algorithm 27, PackSIG]
  **************************************************/
 int pack_sig(uint8_t sig[HAETAE_CRYPTO_BYTES], const poly *c,
              const polyvecl *lowbits_z1, const polyvecl *highbits_z1,
@@ -240,7 +240,7 @@ int pack_sig(uint8_t sig[HAETAE_CRYPTO_BYTES], const poly *c,
  *
  * Returns 1 in case of malformed signature; otherwise 0.
  *
- * Specification: Implements Algorithm 26, UnpackSig.
+ * Specification: Implements @[Algorithm 28, UnpackSIG]
  **************************************************/
 int unpack_sig(poly *c, polyvecl *lowbits_z1, polyvecl *highbits_z1,
                polyveck *h, const uint8_t sig[HAETAE_CRYPTO_BYTES]) {
@@ -296,7 +296,7 @@ int unpack_sig(poly *c, polyvecl *lowbits_z1, polyvecl *highbits_z1,
  *              HAETAE_POLYQ_PACKEDBYTES bytes
  *              - const poly *a: pointer to input polynomial
  *
- * Specification: Implements Algorithm 27, PackPolyQ.
+ * Specification: Implements @[Algorithm 29, PackPolyQ]
  **************************************************/
 void pack_poly_q(uint8_t *r, const poly *a) {
   unsigned int i;
@@ -346,7 +346,7 @@ void pack_poly_q(uint8_t *r, const poly *a) {
  * Arguments:   - poly *r: pointer to output polynomial
  *              - const uint8_t *a: byte array with bit-packed polynomial
  *
- * Specification: Implements Algorithm 28, UnpackPolyQ.
+ * Specification: Implements @[Algorithm 30, UnpackPolyQ]
  **************************************************/
 void unpack_poly_q(poly *r, const uint8_t *a) {
   unsigned int i;
@@ -398,7 +398,7 @@ void unpack_poly_q(poly *r, const uint8_t *a) {
  *              HAETAE_POLYETA_PACKEDBYTES bytes
  *              - const poly *a: pointer to input polynomial
  *
- * Specification: Implements Algorithm 29, PackPolyEta.
+ * Specification: Implements @[Algorithm 31, PackPolyEta]
  **************************************************/
 void pack_poly_eta(uint8_t *r, const poly *a) {
   unsigned int i;
@@ -424,7 +424,7 @@ void pack_poly_eta(uint8_t *r, const poly *a) {
  * Arguments:   - poly *r: pointer to output polynomial
  *              - const uint8_t *a: byte array with bit-packed polynomial
  *
- * Specification: Implements Algorithm 30, UnpackPolyEta.
+ * Specification: Implements @[Algorithm 32, UnpackPolyEta]
  **************************************************/
 void unpack_poly_eta(poly *r, const uint8_t *a) {
   unsigned int i;
@@ -457,7 +457,7 @@ void unpack_poly_eta(poly *r, const uint8_t *a) {
  *                            HAETAE_POLYETA_PACKEDBYTES bytes
  *              - const poly *a: pointer to input polynomial
  *
- * Specification: Implements Algorithm 31, PackPoly2Eta.
+ * Specification: Implements @[Algorithm 33, PackPoly2Eta]
  **************************************************/
 void pack_poly2_eta(uint8_t *r, const poly *a) {
   unsigned int i;
@@ -486,7 +486,7 @@ void pack_poly2_eta(uint8_t *r, const poly *a) {
  * Arguments:   - poly *r: pointer to output polynomial
  *              - const uint8_t *a: byte array with bit-packed polynomial
  *
- * Specification: Implements Algorithm 32, UnpackPoly2Eta.
+ * Specification: Implements @[Algorithm 34, UnpackPoly2Eta]
  **************************************************/
 void unpack_poly2_eta(poly *r, const uint8_t *a) {
   unsigned int i;
@@ -519,7 +519,7 @@ void unpack_poly2_eta(poly *r, const uint8_t *a) {
  * Arguments:   - uint8_t *buf: pointer to output bytes array
  *              - const polyveck *v: a vector of polynomials
  *
- * Specification: Implements Algorithm 33, PackVecHighBits.
+ * Specification: Implements @[Algorithm 35, PackVecHighBits]
  **************************************************/
 void pack_vec_highbits(uint8_t *buf, const polyveck *v) {
   unsigned int i;
@@ -536,7 +536,7 @@ void pack_vec_highbits(uint8_t *buf, const polyveck *v) {
  * Arguments:   - uint8_t *buf: pointer to output bytes array
  *              - const poly *v: a polynomial
  *
- * Specification: Implements Algorithm 34, PackPolyHighBits.
+ * Specification: Implements @[Algorithm 36, PackPolyHighBits]
  **************************************************/
 void pack_poly_highbits(uint8_t *buf, const poly *a) {
   unsigned int i;
@@ -585,7 +585,7 @@ void pack_poly_highbits(uint8_t *buf, const poly *a) {
  * Arguments:   - uint8_t *buf: pointer to output bytes array
  *              - const poly *a: a polynomial
  *
- * Specification: Implements Algorithm 35, PackPolyLsb.
+ * Specification: Implements @[Algorithm 37, PackPolyLsb]
  **************************************************/
 void pack_poly_lsb(uint8_t *buf, const poly *a) {
   unsigned int i;

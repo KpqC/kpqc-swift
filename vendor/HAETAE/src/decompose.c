@@ -9,14 +9,18 @@
  * Name:        decompose_z1
  *
  * Description: For finite field element r, compute high and lowbits
- *              hb, lb such that r = hb * b + lb with -b/4 < lb <= b/4.
+ *              hb, lb such that r = hb * b + lb with -b/2 <= lb < b/2,
+ *              for b = alpha = 256.
  *
  * Arguments:   - int32_t r: input element
  *              - int32_t *lowbits: pointer to output element lb
  *              - int32_t *highbits: pointer to output element hb
+ *
+ * Specification: Implements @[Algorithm 20, HighBits] and
+ *                @[Algorithm 21, LowBits] with alpha = 256
  **************************************************/
 void decompose_z1(int32_t *highbits, int32_t *lowbits, const int32_t r) {
-  const int alpha = 256; // Algorithm parameter.
+  const int alpha = 256; // TODO magic numbers!
   const int log_alpha = 8;
 
   int32_t lb, center;
@@ -38,7 +42,7 @@ void decompose_z1(int32_t *highbits, int32_t *lowbits, const int32_t r) {
  * Arguments:   - int32_t r: input element
  *              - int32_t *highbits: pointer to output element hb
  *
- * Specification: Implements Algorithm 20, DecomposeHint.
+ * Specification: Implements @[Algorithm 22, DecomposeHint]
  **************************************************/
 
 void decompose_hint(int32_t *highbits, const int32_t r) {
@@ -64,7 +68,7 @@ void decompose_hint(int32_t *highbits, const int32_t r) {
  *
  * Returns:     - a1
  *
- * Specification: Implements Algorithm 17, DecomposeVK.
+ * Specification: Implements @[Algorithm 19, DecomposeVK]
  **************************************************/
 int32_t decompose_vk(int32_t *a0, const int32_t a) {
   *a0 = a & 1;

@@ -51,18 +51,30 @@ static void store64(uint8_t x[8], uint64_t u) {
 
 /* Keccak round constants */
 const uint64_t KeccakF_RoundConstants[NROUNDS] = {
-    (uint64_t)0x0000000000000001ULL, (uint64_t)0x0000000000008082ULL,
-    (uint64_t)0x800000000000808aULL, (uint64_t)0x8000000080008000ULL,
-    (uint64_t)0x000000000000808bULL, (uint64_t)0x0000000080000001ULL,
-    (uint64_t)0x8000000080008081ULL, (uint64_t)0x8000000000008009ULL,
-    (uint64_t)0x000000000000008aULL, (uint64_t)0x0000000000000088ULL,
-    (uint64_t)0x0000000080008009ULL, (uint64_t)0x000000008000000aULL,
-    (uint64_t)0x000000008000808bULL, (uint64_t)0x800000000000008bULL,
-    (uint64_t)0x8000000000008089ULL, (uint64_t)0x8000000000008003ULL,
-    (uint64_t)0x8000000000008002ULL, (uint64_t)0x8000000000000080ULL,
-    (uint64_t)0x000000000000800aULL, (uint64_t)0x800000008000000aULL,
-    (uint64_t)0x8000000080008081ULL, (uint64_t)0x8000000000008080ULL,
-    (uint64_t)0x0000000080000001ULL, (uint64_t)0x8000000080008008ULL};
+    (uint64_t)UINT64_C(0x0000000000000001),
+    (uint64_t)UINT64_C(0x0000000000008082),
+    (uint64_t)UINT64_C(0x800000000000808a),
+    (uint64_t)UINT64_C(0x8000000080008000),
+    (uint64_t)UINT64_C(0x000000000000808b),
+    (uint64_t)UINT64_C(0x0000000080000001),
+    (uint64_t)UINT64_C(0x8000000080008081),
+    (uint64_t)UINT64_C(0x8000000000008009),
+    (uint64_t)UINT64_C(0x000000000000008a),
+    (uint64_t)UINT64_C(0x0000000000000088),
+    (uint64_t)UINT64_C(0x0000000080008009),
+    (uint64_t)UINT64_C(0x000000008000000a),
+    (uint64_t)UINT64_C(0x000000008000808b),
+    (uint64_t)UINT64_C(0x800000000000008b),
+    (uint64_t)UINT64_C(0x8000000000008089),
+    (uint64_t)UINT64_C(0x8000000000008003),
+    (uint64_t)UINT64_C(0x8000000000008002),
+    (uint64_t)UINT64_C(0x8000000000000080),
+    (uint64_t)UINT64_C(0x000000000000800a),
+    (uint64_t)UINT64_C(0x800000008000000a),
+    (uint64_t)UINT64_C(0x8000000080008081),
+    (uint64_t)UINT64_C(0x8000000000008080),
+    (uint64_t)UINT64_C(0x0000000080000001),
+    (uint64_t)UINT64_C(0x8000000080008008)};
 
 /*************************************************
  * Name:        KeccakF1600_StatePermute
@@ -392,7 +404,7 @@ static unsigned int keccak_absorb(uint64_t s[25], unsigned int pos,
 static void keccak_finalize(uint64_t s[25], unsigned int pos, unsigned int r,
                             uint8_t p) {
   s[pos / 8] ^= (uint64_t)p << 8 * (pos % 8);
-  s[r / 8 - 1] ^= 1ULL << 63;
+  s[r / 8 - 1] ^= UINT64_C(1) << 63;
 }
 
 /*************************************************
@@ -461,7 +473,7 @@ static void keccak_absorb_once(uint64_t s[25], unsigned int r,
     s[i / 8] ^= (uint64_t)in[i] << 8 * (i % 8);
 
   s[i / 8] ^= (uint64_t)p << 8 * (i % 8);
-  s[(r - 1) / 8] ^= 1ULL << 63;
+  s[(r - 1) / 8] ^= UINT64_C(1) << 63;
 }
 
 /*************************************************

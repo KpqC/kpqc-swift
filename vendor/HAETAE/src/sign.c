@@ -1,4 +1,3 @@
-/* kpqc-py: propagate OS entropy failures (2026-09-06). */
 // SPDX-License-Identifier: MIT
 
 #include "api.h"
@@ -29,7 +28,7 @@
  *
  * Returns 0 (success)
  *
- * Specification: Implements Algorithm 48, KeyGenInternal.
+ * Specification: Implements @[Algorithm 54, KeyGenInternal]
  **************************************************/
 
 int crypto_sign_keypair_internal(uint8_t *vk, uint8_t *sk,
@@ -135,13 +134,14 @@ reject:
  *
  * Returns 0 (success)
  *
- * Specification: Implements Algorithm 45, KeyGen.
+ * Specification: Implements @[Algorithm 51, KeyGen]
  **************************************************/
 int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
   int ret = 0;
   uint8_t seed[HAETAE_SEEDBYTES] = {0};
 
-  if (randombytes(seed, HAETAE_SEEDBYTES) != 0) return -1;
+  if (randombytes(seed, HAETAE_SEEDBYTES) != 0)
+    return -1;
 
   ret = crypto_sign_keypair_internal(pk, sk, seed);
 
@@ -165,7 +165,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
  *
  * Returns 0 (success)
  *
- * Specification: Implements Algorithm 49, SignInternal.
+ * Specification: Implements @[Algorithm 55, SignInternal]
  **************************************************/
 int crypto_sign_signature_internal(uint8_t *sig, size_t *siglen,
                                    const uint8_t *m, size_t mlen,
@@ -302,7 +302,7 @@ reject:
   polyveck_caddDQ2ALPHA(&h);
 
   /*------------------ Decompose(z1) and Pack signature -------------------*/
-  polyvecl_lowbits(&lb_z1, &z1rnd);
+  polyvecl_lowbits(&lb_z1, &z1rnd); // TODO do this in one function together!
   polyvecl_highbits(&hb_z1, &z1rnd);
 
   if (pack_sig(sig, &c, &lb_z1, &hb_z1,
@@ -330,7 +330,7 @@ reject:
  *
  * Returns 0 (success)
  *
- * Specification: Implements Algorithm 46, Sign.
+ * Specification: Implements @[Algorithm 52, Sign]
  **************************************************/
 int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m,
                           size_t mlen, const uint8_t *ctx, size_t ctxlen,
@@ -345,7 +345,8 @@ int crypto_sign_signature(uint8_t *sig, size_t *siglen, const uint8_t *m,
   pre[0] = ctxlen;
   memcpy(pre + 1, ctx, ctxlen);
 
-  if (randombytes(rnd, HAETAE_SEEDBYTES) != 0) return -1;
+  if (randombytes(rnd, HAETAE_SEEDBYTES) != 0)
+    return -1;
 
   return crypto_sign_signature_internal(sig, siglen, m, mlen, pre, 1 + ctxlen,
                                         rnd, sk);
@@ -396,7 +397,7 @@ int crypto_sign(uint8_t *sm, size_t *smlen, const uint8_t *m, size_t mlen,
  *
  * Returns 0 if signature could be verified correctly and -1 otherwise
  *
- * Specification: Implements Algorithm 50, VerifyInternal.
+ * Specification: Implements @[Algorithm 56, VerifyInternal]
  **************************************************/
 int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
                                 const uint8_t *m, size_t mlen,
@@ -500,7 +501,7 @@ int crypto_sign_verify_internal(const uint8_t *sig, size_t siglen,
  *
  * Returns 0 if signature could be verified correctly and -1 otherwise
  *
- * Specification: Implements Algorithm 47, Verify.
+ * Specification: Implements @[Algorithm 53, Verify]
  **************************************************/
 int crypto_sign_verify(const uint8_t *sig, size_t siglen, const uint8_t *m,
                        size_t mlen, const uint8_t *ctx, size_t ctxlen,

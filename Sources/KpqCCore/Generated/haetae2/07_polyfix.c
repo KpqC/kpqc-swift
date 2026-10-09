@@ -237,7 +237,7 @@ uint64_t polyfixveclk_sqnorm2(const polyfixvecl *a, const polyfixveck *b) {
  *              - uint8_t seed[HAETAE_CRHBYTES]: input seed bytes
  *              - const uint16_t nonce: input nonce
  *
- * Specification: Implements Algorithm 11, SampleHyperBall.
+ * Specification: Implements @[Algorithm 13, SampleHyperball]
  **************************************************/
 uint16_t polyfixveclk_sample_hyperball(polyfixvecl *y1, polyfixveck *y2,
                                        uint8_t *b,
@@ -267,7 +267,7 @@ uint16_t polyfixveclk_sample_hyperball(polyfixvecl *y1, polyfixveck *y2,
     sqsum.limb48[0] += (sqsum.limb48[1] & 1) << 47;
     sqsum.limb48[1] >>= 1;
     sqsum.limb48[1] += sqsum.limb48[0] >> 48;
-    sqsum.limb48[0] &= (1ULL << 48) - 1;
+    sqsum.limb48[0] &= (UINT64_C(1) << 48) - 1;
     fixpoint_newton_invsqrt(&invsqrt, &sqsum);
     fixpoint_mul_high(&sqsum, &invsqrt,
                       (uint64_t)(HAETAE_B0 * HAETAE_LN + HAETAE_SQNM / 2)

@@ -48,7 +48,8 @@
 // Between this and our byte-aligned emission, we use 31 (not 32!) bits.
 // This is done intentionally because exact reciprocals for 31-bit uints
 // fit in 32-bit uints: this permits some optimizations during encoding.
-#define RANS_BYTE_L (1u << 23) // lower bound of our normalization interval
+#define RANS_BYTE_L                                                            \
+  (UINT32_C(1) << 23) // lower bound of our normalization interval
 
 // State for a rANS encoder. Yep, that's all there is to it.
 typedef uint32_t RansState;
@@ -123,7 +124,7 @@ static inline int RansDecInit(RansState *r, uint8_t **pptr) {
 
 // Returns the current cumulative frequency (map it to a symbol yourself!)
 static inline uint32_t RansDecGet(RansState *r, uint32_t scale_bits) {
-  return *r & ((1u << scale_bits) - 1);
+  return *r & ((UINT32_C(1) << scale_bits) - 1);
 }
 
 // Advances in the bit stream by "popping" a single symbol with range start
@@ -132,7 +133,7 @@ static inline uint32_t RansDecGet(RansState *r, uint32_t scale_bits) {
 static inline void RansDecAdvance(RansState *r, uint8_t **pptr,
                                   const uint8_t *end, uint32_t start,
                                   uint32_t freq, uint32_t scale_bits) {
-  uint32_t mask = (1u << scale_bits) - 1;
+  uint32_t mask = (UINT32_C(1) << scale_bits) - 1;
 
   // s, x = D(x)
   uint32_t x = *r;
@@ -176,8 +177,8 @@ typedef struct {
 static inline void RansEncSymbolInit(RansEncSymbol *s, uint32_t start,
                                      uint32_t freq, uint32_t scale_bits) {
   RansAssert(scale_bits <= 16);
-  RansAssert(start <= (1u << scale_bits));
-  RansAssert(freq <= (1u << scale_bits) - start);
+  RansAssert(start <= (UINT32_C(1) << scale_bits));
+  RansAssert(freq <= (UINT32_C(1) << scale_bits) - start);
 
   // Say M := 1 << scale_bits.
   //
@@ -225,17 +226,17 @@ static inline void RansEncSymbolInit(RansEncSymbol *s, uint32_t start,
     //
     // so we have start = bias + 1 - M, or equivalently
     //   bias = start + M - 1.
-    s->rcp_freq = ~0u;
+    s->rcp_freq = ~UINT32_C(0);
     s->rcp_shift = 0;
     s->bias = start + (1 << scale_bits) - 1;
   } else {
     // Alverson, "Integer Division using reciprocals"
     // shift=ceil(log2(freq))
     uint32_t shift = 0;
-    while (freq > (1u << shift))
+    while (freq > (UINT32_C(1) << shift))
       shift++;
 
-    s->rcp_freq = (uint32_t)(((1ull << (shift + 31)) + freq - 1) / freq);
+    s->rcp_freq = (uint32_t)(((UINT64_C(1) << (shift + 31)) + freq - 1) / freq);
     s->rcp_shift = shift - 1;
 
     // With these values, 'q' is the correct quotient, so we
@@ -295,7 +296,7 @@ static inline void RansDecAdvanceSymbol(RansState *r, uint8_t **pptr,
 // scale_bits". No renormalization or output happens.
 static inline void RansDecAdvanceStep(RansState *r, uint32_t start,
                                       uint32_t freq, uint32_t scale_bits) {
-  uint32_t mask = (1u << scale_bits) - 1;
+  uint32_t mask = (UINT32_C(1) << scale_bits) - 1;
 
   // s, x = D(x)
   uint32_t x = *r;

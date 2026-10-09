@@ -32,29 +32,29 @@ void fixpoint_add(fp96_76 *xy, const fp96_76 *x, const fp96_76 *y);
 
 static inline void renormalize(fp96_76 *x) {
   x->limb48[1] += x->limb48[0] >> 48;
-  x->limb48[0] &= (1ULL << 48) - 1;
+  x->limb48[0] &= (UINT64_C(1) << 48) - 1;
 }
 
 static inline int64_t smulh48(int64_t a, uint64_t b) {
-#ifndef __SIZEOF_INT128__
+#ifdef __SIZEOF_INT128__
+  return (((int128)a * (int128)b) + ((int128)1 << 48) - 1) >> 48;
+#else
   int64_t ah = a >> 24;
   int64_t al = a - (ah << 24);
   int64_t bl = b & ((1 << 24) - 1);
   int64_t bh = b >> 24;
 
-  int64_t res = (al * bl) >> 24;
-  res += al * bh + ah * bl + (1 << 23); // rounding
-  res >>= 24;
+  int64_t res = (al * bl + ((1 << 24) - 1)) >> 24; // ceiling in low word
+  res += al * bh + ah * bl;
+  res = (res + ((1 << 24) - 1)) >> 24; // ceiling in high word
   return res + (ah * bh);
-#else
-  return ((int128)a * (int128)b + (1ULL << 47)) >> 48; // rounding
 #endif
 }
 
 static inline void mul64(uint64_t r[2], const uint64_t b, const uint64_t a) {
 #ifndef __SIZEOF_INT128__
-  uint64_t al = a & ((1ULL << 32) - 1), bl = b & ((1ULL << 32) - 1),
-           ah = a >> 32, bh = b >> 32;
+  uint64_t al = a & ((UINT64_C(1) << 32) - 1),
+           bl = b & ((UINT64_C(1) << 32) - 1), ah = a >> 32, bh = b >> 32;
   r[0] = a * b;
   r[1] = ah * bl + al * bh + ((al * bl) >> 32);
   r[1] >>= 32;
@@ -68,7 +68,7 @@ static inline void mul64(uint64_t r[2], const uint64_t b, const uint64_t a) {
 
 static inline void sq64(uint64_t r[2], const uint64_t a) {
 #ifndef __SIZEOF_INT128__
-  uint64_t al = a & ((1ULL << 32) - 1), ah = a >> 32;
+  uint64_t al = a & ((UINT64_C(1) << 32) - 1), ah = a >> 32;
   r[0] = a * a;
   r[1] = ah * al * 2 + ((al * al) >> 32);
   r[1] >>= 32;
@@ -84,7 +84,7 @@ static inline void mul48(uint64_t r[2], const uint64_t b, const uint64_t a) {
   mul64(r, b, a);
   r[1] <<= 16;
   r[1] ^= r[0] >> 48;
-  r[0] &= (1ULL << 48) - 1;
+  r[0] &= (UINT64_C(1) << 48) - 1;
 }
 
 static inline void mulacc48(uint64_t r[2], const uint64_t b, const uint64_t a) {
@@ -100,7 +100,7 @@ static inline void sq48(uint64_t r[2], const uint64_t a) {
 
   r[1] <<= 16;
   r[1] ^= r[0] >> 48;
-  r[0] &= (1ULL << 48) - 1;
+  r[0] &= (UINT64_C(1) << 48) - 1;
 }
 
 static inline void fixpoint_mul_high(fp96_76 *xy, const fp96_76 *x,
@@ -112,9 +112,9 @@ static inline void fixpoint_mul_high(fp96_76 *xy, const fp96_76 *x,
   xy->limb48[1] += tmp[0];
 
   // shift right by 28, rounding
-  xy->limb48[0] += 1UL << 27;
+  xy->limb48[0] += UINT64_C(1) << 27;
   xy->limb48[0] >>= 28;
-  xy->limb48[0] += (xy->limb48[1] << 20) & ((1ULL << 48) - 1);
+  xy->limb48[0] += (xy->limb48[1] << 20) & ((UINT64_C(1) << 48) - 1);
   xy->limb48[1] >>= 28;
 
   xy->limb48[1] += tmp[1] << 20;
