@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name = "KpqC"
-  spec.version = "0.2.0"
+  spec.version = "0.2.1"
   spec.summary = "Swift APIs for AIMer, HAETAE, NTRU+, and SMAUG-T."
   spec.description = <<-DESC
     Synchronous Swift bindings for the bundled AIMer and HAETAE signature
