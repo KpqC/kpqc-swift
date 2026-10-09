@@ -27,7 +27,7 @@ public final class KeyPair {
     }
 }
 
-/// The result of a key-encapsulation operation.
+/// The result of a KEM operation.
 public final class EncapsulatedSecret {
     /// Ciphertext to send to the holder of the secret key.
     public let ciphertext: Data
@@ -64,7 +64,7 @@ public struct SignatureSizes: Equatable {
     }
 }
 
-/// Byte sizes for a key-encapsulation parameter set.
+/// Byte sizes for a KEM parameter set.
 public struct KemSizes: Equatable {
     public let publicKey: Int
     public let secretKey: Int
@@ -225,7 +225,7 @@ public final class SignatureAlgorithm: CustomStringConvertible {
     public var description: String { id }
 }
 
-/// A key-encapsulation algorithm and parameter set.
+/// A KEM algorithm and parameter set.
 public final class KeyEncapsulationAlgorithm: CustomStringConvertible {
     public let id: String
     public let sizes: KemSizes

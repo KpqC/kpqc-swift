@@ -4,7 +4,7 @@ Pod::Spec.new do |spec|
   spec.summary = "Swift APIs for AIMer, HAETAE, NTRU+, and SMAUG-T."
   spec.description = <<-DESC
     Synchronous Swift bindings for the bundled AIMer and HAETAE signature
-    schemes and NTRU+ and SMAUG-T key-encapsulation mechanisms.
+    schemes and NTRU+ and SMAUG-T key encapsulation mechanisms (KEMs).
   DESC
   spec.homepage = "https://github.com/KpqC/kpqc-swift"
   spec.license = { type: "MIT", file: "LICENSE" }

@@ -2,7 +2,7 @@
 import KpqCCore
 #endif
 
-/// The SMAUG-T128 key-encapsulation parameter set.
+/// The SMAUG-T128 KEM parameter set.
 public let smaugt128 = KeyEncapsulationAlgorithm(
     id: "SMAUG-T128",
     sizes: KemSizes(publicKey: 672, secretKey: 832, ciphertext: 672, sharedSecret: 32),
@@ -11,7 +11,7 @@ public let smaugt128 = KeyEncapsulationAlgorithm(
     decapsulate: __kpqc_smaugt128_decapsulate
 )
 
-/// The SMAUG-T192 key-encapsulation parameter set.
+/// The SMAUG-T192 KEM parameter set.
 public let smaugt192 = KeyEncapsulationAlgorithm(
     id: "SMAUG-T192",
     sizes: KemSizes(publicKey: 1_088, secretKey: 1_312, ciphertext: 992, sharedSecret: 32),
@@ -20,7 +20,7 @@ public let smaugt192 = KeyEncapsulationAlgorithm(
     decapsulate: __kpqc_smaugt192_decapsulate
 )
 
-/// The SMAUG-T256 key-encapsulation parameter set.
+/// The SMAUG-T256 KEM parameter set.
 public let smaugt256 = KeyEncapsulationAlgorithm(
     id: "SMAUG-T256",
     sizes: KemSizes(publicKey: 1_440, secretKey: 1_728, ciphertext: 1_376, sharedSecret: 32),
@@ -29,7 +29,7 @@ public let smaugt256 = KeyEncapsulationAlgorithm(
     decapsulate: __kpqc_smaugt256_decapsulate
 )
 
-/// The TiMER key-encapsulation parameter set.
+/// The TiMER KEM parameter set.
 public let timer = KeyEncapsulationAlgorithm(
     id: "TiMER",
     sizes: KemSizes(publicKey: 672, secretKey: 832, ciphertext: 608, sharedSecret: 32),

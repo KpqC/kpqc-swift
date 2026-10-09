@@ -1,7 +1,7 @@
 # KpqC
 
-KpqC provides safe, synchronous Swift APIs for AIMer, HAETAE, NTRU+, and
-SMAUG-T.
+KpqC provides safe, synchronous Swift APIs for the AIMer and HAETAE signature
+schemes and the NTRU+ and SMAUG-T key encapsulation mechanisms (KEMs).
 
 ## Runtime support
 
@@ -41,8 +41,8 @@ are not compatible with this version.
 | --- | --- | --- |
 | **AIMer** | Signature | `aimer128f`, `aimer128s`, `aimer192f`, `aimer192s`, `aimer256f`, `aimer256s` |
 | **HAETAE** | Signature | `haetae2`, `haetae3`, `haetae5` |
-| **NTRU+** | Key encapsulation | `ntruplus768`, `ntruplus864`, `ntruplus1152` |
-| **SMAUG&#8209;T** | Key encapsulation | `smaugt128`, `smaugt192`, `smaugt256`, `timer` |
+| **NTRU+** | KEM | `ntruplus768`, `ntruplus864`, `ntruplus1152` |
+| **SMAUG&#8209;T** | KEM | `smaugt128`, `smaugt192`, `smaugt256`, `timer` |
 
 ```swift
 import Foundation
@@ -89,7 +89,7 @@ let valid = try haetae3.verify(
 Verification fails when the supplied context does not match the one used for
 signing.
 
-### Key encapsulation
+### KEM
 
 A KEM creates a shared secret for a sender and a recipient. The public key may
 be distributed; the secret key and resulting shared secret must remain private.
@@ -135,7 +135,7 @@ All sizes are in bytes.
 | `haetae3` | 1,472 | 2,112 | 2,349 |
 | `haetae5` | 2,080 | 2,752 | 2,948 |
 
-#### Key encapsulation
+#### KEM
 
 | Algorithm | Public key | Secret key | Ciphertext | Shared secret |
 | --- | ---: | ---: | ---: | ---: |
