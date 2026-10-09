@@ -151,6 +151,16 @@ Methods reject values of the wrong size. NTRU+ rejects an invalid ciphertext.
 SMAUG-T performs implicit rejection and returns a replacement secret instead;
 that value will not equal the sender's shared secret.
 
+## Known-answer tests
+
+The implementation is tested against all 1,600 KAT records in
+[KpqC/kpqc-test-vectors at commit d75490bf824f](https://github.com/KpqC/kpqc-test-vectors/tree/d75490bf824faa4b148cd0b901a2eb13198fe0da).
+With `kpqc-test-vectors` checked out beside `kpqc-swift`, run:
+
+```sh
+KPQC_TEST_VECTORS=../kpqc-test-vectors ./scripts/test.sh
+```
+
 ## Distribution
 
 The pod includes the bundled native sources. Each parameter set is compiled

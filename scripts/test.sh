@@ -37,4 +37,9 @@ clang $shared_flags -std=c11 -O2 -fPIC -fvisibility=hidden \
   -fno-strict-aliasing -w -DKPQC_TEST_ENTROPY -I "$root" \
   $(find Sources/KpqCCore/Generated -name '*.c' -print | sort) \
   -o "$build/libkpqc_test.$extension"
-python3 Tests/KpqCTests/test_kat.py "$build/libkpqc_test.$extension"
+if [ -n "${KPQC_TEST_VECTORS:-}" ]; then
+  python3 Tests/KpqCTests/test_kat.py \
+    "$build/libkpqc_test.$extension" "$KPQC_TEST_VECTORS"
+else
+  python3 Tests/KpqCTests/test_kat.py "$build/libkpqc_test.$extension"
+fi
